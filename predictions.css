@@ -1,0 +1,48 @@
+/* Loaded after style.css, only used by predictions.html */
+body { align-items: flex-start; }
+
+.wrap { width: 100%; max-width: 900px; margin: 0 auto; }
+
+header.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+header.top h1 { margin: 0; }
+header.top a { color: var(--muted); text-decoration: none; }
+header.top a:hover { color: var(--text); }
+.balance { color: var(--muted); }
+.balance strong { color: var(--text); }
+
+h2 { font-size: 1.1rem; margin: 32px 0 12px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+.match {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+.match .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; }
+.match .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.match .reward { color: var(--muted); font-size: 0.85rem; margin-top: 12px; }
+
+.team-btn {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.team-btn:hover:not(:disabled) { border-color: var(--muted); background: var(--bg); }
+.team-btn.picked { border-color: var(--accent); }
+.team-btn.win { background: #1f6f3d; border-color: #2e9b57; }
+.team-btn.lose { background: #7a2a2a; border-color: #a33d3d; }
+.team-btn:disabled { cursor: default; opacity: 1; }
+
+.empty { color: var(--muted); }

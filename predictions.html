@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Predictions - Protocol Collection</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="predictions.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>Predictions</h1>
+      <div>
+        <span class="balance"><strong id="credits">0</strong> Collection Credits</span>
+        &nbsp;&nbsp;<a href="index.html">Home</a>
+      </div>
+    </header>
+
+    <p id="error" class="error hidden"></p>
+    <p id="login-note" class="empty hidden">You need to log in first. Go to the <a href="index.html">home page</a> and log in with Discord.</p>
+
+    <div id="content" class="hidden">
+      <h2>Upcoming</h2>
+      <div id="upcoming" class="grid"></div>
+      <h2>Started</h2>
+      <div id="started" class="grid"></div>
+      <h2>Finished</h2>
+      <div id="finished" class="grid"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script>
+    const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG;
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const errorBox = document.getElementById("error");
+    let userId = null;
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.remove("hidden");
+    }
+
+    function el(tag, className, text) {
+      const e = document.createElement(tag);
+      if (className) e.className = className;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    }
+
+    async function pick(matchId, team) {
+      const { error } = await db.rpc("make_prediction", { p_match_id: matchId, p_pick: team });
+      if (error) { showError(error.message); return; }
+      errorBox.classList.add("hidden");
+      load();
+    }
+
+    function teamButton(match, team, myPick, state) {
+      const b = el("button", "team-btn", team);
+      if (state === "upcoming") {
+        if (myPick === team) b.classList.add("picked");
+        b.addEventListener("click", () => pick(match.id, team));
+      } else {
+        b.disabled = true;
+        if (myPick === team) b.classList.add("picked");
+        if (state === "finished") b.classList.add(team === match.winner ? "win" : "lose");
+      }
+      return b;
+    }
+
+    function matchCard(match, myPick, state) {
+      const card = el("div", "match");
+      const when = new Date(match.start_time).toLocaleString([], {
+        weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+      });
+      const label = [match.event, match.stage].filter(Boolean).join(" - ");
+      card.appendChild(el("div", "meta", label + " | " + when));
+
+      const teams = el("div", "teams");
+      teams.appendChild(teamButton(match, match.team_a, myPick, state));
+      teams.appendChild(teamButton(match, match.team_b, myPick, state));
+      card.appendChild(teams);
+
+      let note = match.reward + " Collection Credits for a correct pick";
+      if (state === "upcoming" && !myPick) note += " | no pick yet";
+      if (state !== "upcoming" && !myPick) note += " | you did not pick";
+      card.appendChild(el("div", "reward", note));
+      return card;
+    }
+
+    function fill(id, cards) {
+      const box = document.getElementById(id);
+      box.replaceChildren();
+      if (cards.length === 0) {
+        box.appendChild(el("p", "empty", "Nothing here yet."));
+      } else {
+        cards.forEach(c => box.appendChild(c));
+      }
+    }
+
+    async function load() {
+      const [matchesRes, predsRes, profileRes] = await Promise.all([
+        db.from("matches").select("*").order("start_time", { ascending: true }),
+        db.from("predictions").select("match_id, pick"),
+        db.from("profiles").select("credits").eq("id", userId).single()
+      ]);
+
+      if (matchesRes.error) { showError("Could not load matches: " + matchesRes.error.message); return; }
+      if (profileRes.data) document.getElementById("credits").textContent = profileRes.data.credits;
+
+      const picks = {};
+      (predsRes.data || []).forEach(p => { picks[p.match_id] = p.pick; });
+
+      const now = new Date();
+      const upcoming = [], started = [], finished = [];
+
+      matchesRes.data.forEach(m => {
+        if (m.winner) finished.push(matchCard(m, picks[m.id], "finished"));
+        else if (new Date(m.start_time) <= now) started.push(matchCard(m, picks[m.id], "started"));
+        else upcoming.push(matchCard(m, picks[m.id], "upcoming"));
+      });
+
+      finished.reverse(); // newest result first
+      fill("upcoming", upcoming);
+      fill("started", started);
+      fill("finished", finished);
+    }
+
+    db.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        document.getElementById("login-note").classList.remove("hidden");
+        return;
+      }
+      userId = data.session.user.id;
+      document.getElementById("content").classList.remove("hidden");
+      load();
+    });
+  </script>
+</body>
+</html>
