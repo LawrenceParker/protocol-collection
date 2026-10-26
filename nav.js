@@ -10,7 +10,9 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const Nav = {
   LINKS: [
     { href: "predictions.html", label: "Predictions" },
-    { href: "collections.html", label: "Collections" }
+    { href: "collections.html", label: "Collections" },
+    { href: "mycards.html", label: "My Cards" },
+    { href: "leaderboard.html", label: "Leaderboard" }
   ],
 
   user: null,

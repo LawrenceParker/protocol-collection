@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leaderboard - Protocol Collection</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="leaderboard.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="page">
+    <h1>Leaderboard</h1>
+    <p class="subtitle">See how you rank against other players.</p>
+
+    <p id="error" class="error hidden"></p>
+    <p id="login-note" class="empty hidden">Log in with Discord using the button in the top right to see the leaderboard.</p>
+
+    <div id="content" class="hidden">
+      <div id="tabs" class="tabs"></div>
+      <div id="board"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    // To add or change a leaderboard, edit this list.
+    //   value: how a row is scored   detail: optional smaller text   hideZero: skip players on 0
+    const BOARDS = [
+      {
+        id: "predictions",
+        label: "Predictions",
+        column: "Correct picks",
+        value: r => Number(r.correct_picks),
+        detail: r => r.finished_picks > 0 ? "out of " + r.finished_picks : "no results yet",
+        tiebreak: r => Number(r.finished_picks),   // fewer finished picks ranks higher on a tie
+        hideZero: true
+      },
+      {
+        id: "cards",
+        label: "Cards owned",
+        column: "Cards",
+        value: r => Number(r.cards_owned),
+        hideZero: true
+      },
+      {
+        id: "credits",
+        label: "Credits",
+        column: "Collection Credits",
+        value: r => Number(r.credits),
+        hideZero: false
+      }
+    ];
+
+    const errorBox = document.getElementById("error");
+    let rows = [];
+    let active = BOARDS[0].id;
+    let myId = null;
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.remove("hidden");
+    }
+
+    function el(tag, className, text) {
+      const e = document.createElement(tag);
+      if (className) e.className = className;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    }
+
+    function renderTabs() {
+      const box = document.getElementById("tabs");
+      box.replaceChildren();
+      BOARDS.forEach(b => {
+        const btn = el("button", "secondary" + (b.id === active ? " active" : ""), b.label);
+        btn.addEventListener("click", () => { active = b.id; renderTabs(); renderBoard(); });
+        box.appendChild(btn);
+      });
+    }
+
+    function renderBoard() {
+      const b = BOARDS.find(x => x.id === active);
+      let list = rows.slice();
+      if (b.hideZero) list = list.filter(r => b.value(r) > 0);
+
+      list.sort((x, y) => {
+        const d = b.value(y) - b.value(x);
+        if (d !== 0) return d;
+        if (b.tiebreak) return b.tiebreak(x) - b.tiebreak(y);
+        return (x.username || "").localeCompare(y.username || "");
+      });
+
+      const box = document.getElementById("board");
+      box.replaceChildren();
+
+      if (list.length === 0) {
+        box.appendChild(el("p", "empty", "Nobody is on this leaderboard yet."));
+        return;
+      }
+
+      const table = el("table", "board");
+      const head = el("tr");
+      head.appendChild(el("th", "rank", "Rank"));
+      head.appendChild(el("th", null, "Player"));
+      head.appendChild(el("th", "num", b.column));
+      const thead = el("thead");
+      thead.appendChild(head);
+      table.appendChild(thead);
+
+      const tbody = el("tbody");
+      list.forEach((r, i) => {
+        const tr = el("tr");
+        if (r.user_id === myId) tr.classList.add("me");
+
+        tr.appendChild(el("td", "rank", String(i + 1)));
+
+        const who = el("td");
+        const player = el("div", "player");
+        if (r.avatar_url) {
+          const img = el("img");
+          img.src = r.avatar_url;
+          img.alt = "";
+          player.appendChild(img);
+        }
+        player.appendChild(el("span", null, r.username || "Player"));
+        who.appendChild(player);
+        tr.appendChild(who);
+
+        const score = el("td", "num", String(b.value(r)));
+        if (b.detail) {
+          score.appendChild(document.createTextNode(" "));
+          score.appendChild(el("span", "sub", b.detail(r)));
+        }
+        tr.appendChild(score);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      box.appendChild(table);
+    }
+
+    async function load() {
+      const { data, error } = await db.rpc("get_leaderboard");
+      if (error) {
+        showError("Could not load the leaderboard: " + error.message);
+        return;
+      }
+      rows = data || [];
+      renderTabs();
+      renderBoard();
+    }
+
+    Nav.init().then(user => {
+      if (!user) {
+        document.getElementById("login-note").classList.remove("hidden");
+        return;
+      }
+      myId = user.id;
+      document.getElementById("content").classList.remove("hidden");
+      load();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Cards - Protocol Collection</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="mycards.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <main class="page">
+    <h1>My Cards</h1>
+    <p class="subtitle">Every card you have opened. Each copy is its own card.</p>
+
+    <p id="error" class="error hidden"></p>
+    <p id="login-note" class="empty hidden">Log in with Discord using the button in the top right to see your cards.</p>
+
+    <div id="content" class="hidden">
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Search by player or team" aria-label="Search by player or team">
+        <select id="type-filter" aria-label="Filter by event type"></select>
+        <select id="sort" aria-label="Sort cards">
+          <option value="newest">Newest first</option>
+          <option value="rarest">Rarest first</option>
+          <option value="player">Player A to Z</option>
+        </select>
+      </div>
+      <p id="count" class="count"></p>
+      <div id="cards" class="cards"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    const errorBox = document.getElementById("error");
+    let rarities = {};
+    let owned = [];
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.remove("hidden");
+    }
+
+    function el(tag, className, text) {
+      const e = document.createElement(tag);
+      if (className) e.className = className;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    }
+
+    function playerCard(row) {
+      const c = row.cards;
+      const r = rarities[c.event_type] || {};
+      const card = el("div", "player-card");
+      if (r.colour) card.style.borderColor = r.colour;
+      card.appendChild(el("div", "rarity", c.event + " " + c.year));
+      card.appendChild(el("div", "name", c.player));
+      card.appendChild(el("div", "sub", [c.team, c.role].filter(Boolean).join(" | ")));
+      if (row.collection) card.appendChild(el("div", "from", "From " + row.collection));
+      return card;
+    }
+
+    function weight(row) {
+      const r = rarities[row.cards.event_type];
+      return r ? Number(r.drop_weight) : Infinity;
+    }
+
+    function render() {
+      const search = document.getElementById("search").value.trim().toLowerCase();
+      const type = document.getElementById("type-filter").value;
+      const sort = document.getElementById("sort").value;
+
+      let rows = owned.filter(row => {
+        const c = row.cards;
+        if (type && c.event_type !== type) return false;
+        if (search && !(c.player + " " + (c.team || "")).toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      if (sort === "rarest") {
+        rows.sort((a, b) => weight(a) - weight(b) || b.id - a.id);
+      } else if (sort === "player") {
+        rows.sort((a, b) => a.cards.player.localeCompare(b.cards.player) || b.id - a.id);
+      } else {
+        rows.sort((a, b) => b.id - a.id);
+      }
+
+      document.getElementById("count").textContent =
+        rows.length + " of " + owned.length + " cards";
+
+      const box = document.getElementById("cards");
+      box.replaceChildren();
+      if (owned.length === 0) {
+        box.appendChild(el("p", "empty", "You have no cards yet. Open a collection to get started."));
+      } else if (rows.length === 0) {
+        box.appendChild(el("p", "empty", "No cards match your filters."));
+      } else {
+        rows.forEach(row => box.appendChild(playerCard(row)));
+      }
+    }
+
+    function buildTypeFilter() {
+      const select = document.getElementById("type-filter");
+      const types = [...new Set(owned.map(r => r.cards.event_type))]
+        .sort((a, b) => weight({ cards: { event_type: b } }) - weight({ cards: { event_type: a } }));
+      select.replaceChildren();
+      const all = el("option", null, "All event types");
+      all.value = "";
+      select.appendChild(all);
+      types.forEach(t => {
+        const o = el("option", null, t);
+        o.value = t;
+        select.appendChild(o);
+      });
+    }
+
+    async function load() {
+      const [cardsRes, rarRes] = await Promise.all([
+        db.from("user_cards")
+          .select("id, collection, opened_at, cards(event, event_type, year, player, team, role)")
+          .order("id", { ascending: false })
+          .limit(1000),
+        db.from("event_rarities").select("event_type, colour, drop_weight")
+      ]);
+
+      if (cardsRes.error) { showError("Could not load your cards: " + cardsRes.error.message); return; }
+
+      rarities = {};
+      (rarRes.data || []).forEach(r => { rarities[r.event_type] = r; });
+      owned = (cardsRes.data || []).filter(r => r.cards);
+
+      buildTypeFilter();
+      render();
+    }
+
+    document.getElementById("search").addEventListener("input", render);
+    document.getElementById("type-filter").addEventListener("change", render);
+    document.getElementById("sort").addEventListener("change", render);
+
+    Nav.init().then(user => {
+      if (!user) {
+        document.getElementById("login-note").classList.remove("hidden");
+        return;
+      }
+      document.getElementById("content").classList.remove("hidden");
+      load();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+/* Loaded after style.css and nav.css, only used by leaderboard.html */
+
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.tabs button { padding: 9px 16px; }
+.tabs button.active { background: var(--panel); color: var(--text); border-color: var(--text); }
+
+.board {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.board th,
+.board td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.board th { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
+.board tr:last-child td { border-bottom: 0; }
+.board .rank { width: 56px; color: var(--muted); }
+.board .num { text-align: right; white-space: nowrap; }
+.board .sub { color: var(--muted); font-size: 0.85rem; }
+
+.player { display: flex; align-items: center; gap: 10px; }
+.player img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+.board tr.me td { background: var(--bg); font-weight: 600; }
