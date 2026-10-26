@@ -5,20 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Predictions - Protocol Collection</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
   <link rel="stylesheet" href="predictions.css">
 </head>
 <body>
-  <div class="wrap">
-    <header class="top">
-      <h1>Predictions</h1>
-      <div>
-        <span class="balance"><strong id="credits">0</strong> Collection Credits</span>
-        &nbsp;&nbsp;<a href="index.html">Home</a>
-      </div>
-    </header>
+  <div id="navbar"></div>
+
+  <main class="page">
+    <h1>Predictions</h1>
+    <p class="subtitle">Pick the winner of each match. Correct picks earn the reward shown on the match.</p>
 
     <p id="error" class="error hidden"></p>
-    <p id="login-note" class="empty hidden">You need to log in first. Go to the <a href="index.html">home page</a> and log in with Discord.</p>
+    <p id="login-note" class="empty hidden">Log in with Discord using the button in the top right to make predictions.</p>
 
     <div id="content" class="hidden">
       <h2>Upcoming</h2>
@@ -28,16 +26,13 @@
       <h2>Finished</h2>
       <div id="finished" class="grid"></div>
     </div>
-  </div>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
+  <script src="nav.js"></script>
   <script>
-    const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG;
-    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     const errorBox = document.getElementById("error");
-    let userId = null;
 
     function showError(message) {
       errorBox.textContent = message;
@@ -59,35 +54,68 @@
     }
 
     function teamButton(match, team, myPick, state) {
-      const b = el("button", "team-btn", team);
+      const b = el("button", "team-btn");
+      b.appendChild(document.createTextNode(team));
+      if (myPick === team) {
+        b.classList.add("picked");
+        b.appendChild(el("span", "tag", "Your pick"));
+      }
       if (state === "upcoming") {
-        if (myPick === team) b.classList.add("picked");
         b.addEventListener("click", () => pick(match.id, team));
       } else {
         b.disabled = true;
-        if (myPick === team) b.classList.add("picked");
         if (state === "finished") b.classList.add(team === match.winner ? "win" : "lose");
       }
       return b;
     }
 
+    function statusLine(match, myPick, state) {
+      const s = el("div", "status");
+      if (state === "upcoming") {
+        s.textContent = myPick
+          ? "Your pick: " + myPick + ". You can change it until the match starts."
+          : "No pick yet.";
+      } else if (state === "started") {
+        s.textContent = myPick
+          ? "Your pick: " + myPick + ". Locked in, waiting for the result."
+          : "You did not pick this match.";
+      } else {
+        if (!myPick) {
+          s.textContent = "You did not pick this match. Winner: " + match.winner + ".";
+        } else if (myPick === match.winner) {
+          s.textContent = "Correct. You picked " + myPick + " and earned " + match.reward + " credits.";
+          s.classList.add("ok");
+        } else {
+          s.textContent = "Incorrect. You picked " + myPick + ", winner was " + match.winner + ".";
+          s.classList.add("bad");
+        }
+      }
+      return s;
+    }
+
     function matchCard(match, myPick, state) {
       const card = el("div", "match");
-      const when = new Date(match.start_time).toLocaleString([], {
+
+      const top = el("div", "top");
+      const meta = el("div", "meta");
+      meta.appendChild(el("span", "event", [match.event, match.stage].filter(Boolean).join(" - ")));
+      meta.appendChild(document.createTextNode(new Date(match.start_time).toLocaleString([], {
         weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
-      });
-      const label = [match.event, match.stage].filter(Boolean).join(" - ");
-      card.appendChild(el("div", "meta", label + " | " + when));
+      })));
+      top.appendChild(meta);
+
+      const badge = el("div", "reward-badge");
+      badge.appendChild(el("strong", null, "+" + match.reward));
+      badge.appendChild(el("span", null, "credits"));
+      top.appendChild(badge);
+      card.appendChild(top);
 
       const teams = el("div", "teams");
       teams.appendChild(teamButton(match, match.team_a, myPick, state));
       teams.appendChild(teamButton(match, match.team_b, myPick, state));
       card.appendChild(teams);
 
-      let note = match.reward + " Collection Credits for a correct pick";
-      if (state === "upcoming" && !myPick) note += " | no pick yet";
-      if (state !== "upcoming" && !myPick) note += " | you did not pick";
-      card.appendChild(el("div", "reward", note));
+      card.appendChild(statusLine(match, myPick, state));
       return card;
     }
 
@@ -102,14 +130,12 @@
     }
 
     async function load() {
-      const [matchesRes, predsRes, profileRes] = await Promise.all([
+      const [matchesRes, predsRes] = await Promise.all([
         db.from("matches").select("*").order("start_time", { ascending: true }),
-        db.from("predictions").select("match_id, pick"),
-        db.from("profiles").select("credits").eq("id", userId).single()
+        db.from("predictions").select("match_id, pick")
       ]);
 
       if (matchesRes.error) { showError("Could not load matches: " + matchesRes.error.message); return; }
-      if (profileRes.data) document.getElementById("credits").textContent = profileRes.data.credits;
 
       const picks = {};
       (predsRes.data || []).forEach(p => { picks[p.match_id] = p.pick; });
@@ -129,12 +155,11 @@
       fill("finished", finished);
     }
 
-    db.auth.getSession().then(({ data }) => {
-      if (!data.session) {
+    Nav.init().then(user => {
+      if (!user) {
         document.getElementById("login-note").classList.remove("hidden");
         return;
       }
-      userId = data.session.user.id;
       document.getElementById("content").classList.remove("hidden");
       load();
     });

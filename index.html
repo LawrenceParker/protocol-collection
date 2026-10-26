@@ -5,94 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Protocol Collection</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
 </head>
 <body>
-  <main class="card">
+  <div id="navbar"></div>
 
-    <!-- Shown when logged out -->
-    <section id="logged-out">
+  <main class="page-center">
+    <section class="card">
       <h1>Protocol Collection</h1>
-      <p>Predict VCT match winners, earn Collection Credits and open Collections of pro player cards.</p>
-      <button id="login-btn">Log in with Discord</button>
+      <p id="intro">Predict VCT match winners, earn Collection Credits and open Collections of pro player cards.</p>
+      <div id="actions" class="button-row"></div>
+      <p id="error" class="error hidden"></p>
     </section>
-
-    <!-- Shown when logged in -->
-    <section id="logged-in" class="hidden">
-      <img id="avatar" class="avatar" alt="Your Discord avatar">
-      <h1 id="username"></h1>
-      <div class="credits">
-        <strong id="credits">0</strong>
-        <span>Collection Credits</span>
-      </div>
-      <button id="logout-btn" class="secondary">Log out</button>
-    </section>
-
-    <p id="error" class="error hidden"></p>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
+  <script src="nav.js"></script>
   <script>
-    const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG;
-    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    const loggedOut = document.getElementById("logged-out");
-    const loggedIn = document.getElementById("logged-in");
-    const errorBox = document.getElementById("error");
-
-    function showError(message) {
-      errorBox.textContent = message;
-      errorBox.classList.remove("hidden");
+    function link(href, label, secondary) {
+      const a = document.createElement("a");
+      a.href = href;
+      a.textContent = label;
+      a.className = "button" + (secondary ? " secondary" : "");
+      return a;
     }
 
-    async function showProfile(user) {
-      const { data, error } = await db
-        .from("profiles")
-        .select("username, avatar_url, credits")
-        .eq("id", user.id)
-        .single();
-
-      if (error) {
-        showError("Logged in, but your profile could not be loaded. Check that 01_profiles.sql has been run.");
-        console.error(error);
-      }
-
-      const meta = user.user_metadata || {};
-      document.getElementById("username").textContent =
-        (data && data.username) || meta.full_name || "Player";
-      document.getElementById("avatar").src =
-        (data && data.avatar_url) || meta.avatar_url || "";
-      document.getElementById("credits").textContent =
-        data ? data.credits : 0;
-
-      loggedOut.classList.add("hidden");
-      loggedIn.classList.remove("hidden");
-    }
-
-    function showLoggedOut() {
-      loggedIn.classList.add("hidden");
-      loggedOut.classList.remove("hidden");
-    }
-
-    document.getElementById("login-btn").addEventListener("click", async () => {
-      const { error } = await db.auth.signInWithOAuth({
-        provider: "discord",
-        options: { redirectTo: window.location.origin + window.location.pathname }
-      });
-      if (error) showError("Login failed: " + error.message);
-    });
-
-    document.getElementById("logout-btn").addEventListener("click", async () => {
-      await db.auth.signOut();
-      showLoggedOut();
-    });
-
-    db.auth.onAuthStateChange((event, session) => {
-      if (session && session.user) {
-        // setTimeout avoids a known deadlock when querying inside this callback
-        setTimeout(() => showProfile(session.user), 0);
+    Nav.init().then(user => {
+      const actions = document.getElementById("actions");
+      if (user) {
+        const name = (Nav.profile && Nav.profile.username) || "Player";
+        document.getElementById("intro").textContent = "Welcome back, " + name + ".";
+        actions.appendChild(link("predictions.html", "Predictions"));
+        actions.appendChild(link("collections.html", "Collections", true));
       } else {
-        showLoggedOut();
+        const btn = document.createElement("button");
+        btn.textContent = "Log in with Discord";
+        btn.addEventListener("click", () => Nav.login());
+        actions.appendChild(btn);
       }
     });
   </script>

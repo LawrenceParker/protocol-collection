@@ -1,0 +1,60 @@
+/* Navbar styles, used by every page */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 10px 24px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.navbar .brand {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  margin-right: 8px;
+}
+
+.navbar .links { display: flex; gap: 4px; }
+.navbar .links a {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+.navbar .links a:hover { color: var(--text); }
+.navbar .links a.active { color: var(--text); background: var(--bg); }
+
+.navbar .spacer { flex: 1; }
+
+.nav-right { display: flex; align-items: center; gap: 12px; }
+
+.credits-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  color: var(--muted);
+  background: var(--bg);
+}
+.credits-pill strong { color: var(--text); }
+
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+.nav-name { color: var(--text); }
+
+.nav-btn { padding: 8px 14px; font-size: 0.9rem; }
+.nav-btn.secondary { margin-top: 0; }
+
+@media (max-width: 640px) {
+  .navbar { padding: 10px 12px; }
+  .nav-name { display: none; }
+}

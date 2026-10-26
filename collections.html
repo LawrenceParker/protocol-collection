@@ -5,42 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Collections - Protocol Collection</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="nav.css">
   <link rel="stylesheet" href="collections.css">
 </head>
 <body>
-  <div class="wrap">
-    <header class="top">
-      <h1>Collections</h1>
-      <div>
-        <span class="balance"><strong id="credits">0</strong> Collection Credits</span>
-        &nbsp;&nbsp;<a href="predictions.html">Predictions</a>
-        &nbsp;&nbsp;<a href="index.html">Home</a>
-      </div>
-    </header>
+  <div id="navbar"></div>
+
+  <main class="page">
+    <h1>Collections</h1>
+    <p class="subtitle">Spend Collection Credits to open a collection of player cards.</p>
 
     <p id="error" class="error hidden"></p>
-    <p id="login-note" class="empty hidden">You need to log in first. Go to the <a href="index.html">home page</a> and log in with Discord.</p>
+    <p id="login-note" class="empty hidden">Log in with Discord using the button in the top right to open collections.</p>
 
     <div id="content" class="hidden">
-      <div id="packs" class="grid"></div>
+      <div id="packs" class="packs"></div>
 
       <div id="results" class="hidden">
         <h2 id="results-title">You opened</h2>
         <div id="cards" class="cards"></div>
       </div>
     </div>
-  </div>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
+  <script src="nav.js"></script>
   <script>
-    const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG;
-    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     const errorBox = document.getElementById("error");
-    let userId = null;
     let rarities = {};
-    let credits = 0;
 
     function showError(message) {
       errorBox.textContent = message;
@@ -60,21 +53,32 @@
       });
     }
 
-    function packCard(c) {
-      const card = el("div", "pack");
-      card.appendChild(el("h3", null, c.name));
-      if (c.description) card.appendChild(el("p", "desc", c.description));
-      card.appendChild(el("p", "detail", c.price + " Collection Credits | " + c.cards_per_pack + " cards"));
-      if (c.ends_at) card.appendChild(el("p", "limited", "Limited time: ends " + fmtDate(c.ends_at)));
+    function packTile(c) {
+      const item = el("div", "pack-item");
+
+      const tile = el("div", "tile");
+      if (c.colour) tile.style.setProperty("--tile-colour", c.colour);
+
+      const top = el("div");
+      top.appendChild(el("h3", "name", c.name));
+      if (c.description) top.appendChild(el("p", "desc", c.description));
+      tile.appendChild(top);
+
+      const info = el("div", "info");
+      info.appendChild(el("span", "price", c.price + " credits"));
+      info.appendChild(el("span", "count", c.cards_per_pack + " cards"));
+      if (c.ends_at) info.appendChild(el("span", "limited", "Limited time. Ends " + fmtDate(c.ends_at)));
+      tile.appendChild(info);
+      item.appendChild(tile);
 
       const btn = el("button", null, "Open collection");
-      if (credits < c.price) {
+      if (Nav.credits < c.price) {
         btn.disabled = true;
         btn.textContent = "Not enough credits";
       }
       btn.addEventListener("click", () => openPack(c, btn));
-      card.appendChild(btn);
-      return card;
+      item.appendChild(btn);
+      return item;
     }
 
     function playerCard(p) {
@@ -97,26 +101,22 @@
         return;
       }
       document.getElementById("results-title").textContent = "You opened " + c.name;
-      const box = document.getElementById("cards");
-      box.replaceChildren(...data.map(playerCard));
+      document.getElementById("cards").replaceChildren(...data.map(playerCard));
       document.getElementById("results").classList.remove("hidden");
+      await Nav.refreshCredits();   // updates the credits in the navbar
       await load();
     }
 
     async function load() {
-      const [colRes, rarRes, profRes] = await Promise.all([
+      const [colRes, rarRes] = await Promise.all([
         db.from("collections").select("*").eq("active", true).order("sort_order"),
-        db.from("event_rarities").select("event, colour"),
-        db.from("profiles").select("credits").eq("id", userId).single()
+        db.from("event_rarities").select("event, colour")
       ]);
 
       if (colRes.error) { showError("Could not load collections: " + colRes.error.message); return; }
 
       rarities = {};
       (rarRes.data || []).forEach(r => { rarities[r.event] = r; });
-
-      credits = profRes.data ? profRes.data.credits : 0;
-      document.getElementById("credits").textContent = credits;
 
       const now = new Date();
       const open = colRes.data.filter(c =>
@@ -129,16 +129,15 @@
       if (open.length === 0) {
         box.appendChild(el("p", "empty", "No collections are open right now."));
       } else {
-        open.forEach(c => box.appendChild(packCard(c)));
+        open.forEach(c => box.appendChild(packTile(c)));
       }
     }
 
-    db.auth.getSession().then(({ data }) => {
-      if (!data.session) {
+    Nav.init().then(user => {
+      if (!user) {
         document.getElementById("login-note").classList.remove("hidden");
         return;
       }
-      userId = data.session.user.id;
       document.getElementById("content").classList.remove("hidden");
       load();
     });

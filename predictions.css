@@ -1,21 +1,4 @@
-/* Loaded after style.css, only used by predictions.html */
-body { align-items: flex-start; }
-
-.wrap { width: 100%; max-width: 900px; margin: 0 auto; }
-
-header.top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
-header.top h1 { margin: 0; }
-header.top a { color: var(--muted); text-decoration: none; }
-header.top a:hover { color: var(--text); }
-.balance { color: var(--muted); }
-.balance strong { color: var(--text); }
-
-h2 { font-size: 1.1rem; margin: 32px 0 12px; }
+/* Loaded after style.css and nav.css, only used by predictions.html */
 
 .grid {
   display: grid;
@@ -30,19 +13,50 @@ h2 { font-size: 1.1rem; margin: 32px 0 12px; }
   border-radius: 10px;
   padding: 16px;
 }
-.match .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; }
+
+.match .top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.match .meta { color: var(--muted); font-size: 0.85rem; }
+.match .meta .event { color: var(--text); font-weight: 600; display: block; }
+
+.reward-badge {
+  flex-shrink: 0;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 4px 10px;
+  text-align: center;
+  line-height: 1.2;
+}
+.reward-badge strong { display: block; font-size: 1.1rem; color: var(--accent); }
+.reward-badge span { font-size: 0.75rem; color: var(--muted); }
+
 .match .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.match .reward { color: var(--muted); font-size: 0.85rem; margin-top: 12px; }
 
 .team-btn {
   background: var(--bg);
   border: 1px solid var(--line);
   color: var(--text);
+  padding: 12px 8px;
 }
 .team-btn:hover:not(:disabled) { border-color: var(--muted); background: var(--bg); }
-.team-btn.picked { border-color: var(--accent); }
-.team-btn.win { background: #1f6f3d; border-color: #2e9b57; }
-.team-btn.lose { background: #7a2a2a; border-color: #a33d3d; }
+.team-btn .tag {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.team-btn.picked { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
+.team-btn.picked .tag { color: var(--text); }
+.team-btn.win { background: var(--good-bg); border-color: var(--good); }
+.team-btn.lose { background: var(--bad-bg); border-color: var(--bad); }
+.team-btn.win .tag, .team-btn.lose .tag { color: var(--text); }
 .team-btn:disabled { cursor: default; opacity: 1; }
 
-.empty { color: var(--muted); }
+.status { margin-top: 12px; font-size: 0.9rem; color: var(--muted); }
+.status.ok { color: #5fd18a; }
+.status.bad { color: #e07070; }
