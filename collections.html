@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Collections - Protocol Collection</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="collections.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>Collections</h1>
+      <div>
+        <span class="balance"><strong id="credits">0</strong> Collection Credits</span>
+        &nbsp;&nbsp;<a href="predictions.html">Predictions</a>
+        &nbsp;&nbsp;<a href="index.html">Home</a>
+      </div>
+    </header>
+
+    <p id="error" class="error hidden"></p>
+    <p id="login-note" class="empty hidden">You need to log in first. Go to the <a href="index.html">home page</a> and log in with Discord.</p>
+
+    <div id="content" class="hidden">
+      <div id="packs" class="grid"></div>
+
+      <div id="results" class="hidden">
+        <h2 id="results-title">You opened</h2>
+        <div id="cards" class="cards"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script>
+    const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG;
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const errorBox = document.getElementById("error");
+    let userId = null;
+    let rarities = {};
+    let credits = 0;
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.remove("hidden");
+    }
+
+    function el(tag, className, text) {
+      const e = document.createElement(tag);
+      if (className) e.className = className;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    }
+
+    function fmtDate(d) {
+      return new Date(d).toLocaleString([], {
+        weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+      });
+    }
+
+    function packCard(c) {
+      const card = el("div", "pack");
+      card.appendChild(el("h3", null, c.name));
+      if (c.description) card.appendChild(el("p", "desc", c.description));
+      card.appendChild(el("p", "detail", c.price + " Collection Credits | " + c.cards_per_pack + " cards"));
+      if (c.ends_at) card.appendChild(el("p", "limited", "Limited time: ends " + fmtDate(c.ends_at)));
+
+      const btn = el("button", null, "Open collection");
+      if (credits < c.price) {
+        btn.disabled = true;
+        btn.textContent = "Not enough credits";
+      }
+      btn.addEventListener("click", () => openPack(c, btn));
+      card.appendChild(btn);
+      return card;
+    }
+
+    function playerCard(p) {
+      const r = rarities[p.event] || {};
+      const card = el("div", "player-card");
+      if (r.colour) card.style.borderColor = r.colour;
+      card.appendChild(el("div", "rarity", p.event + " " + p.year));
+      card.appendChild(el("div", "name", p.player));
+      card.appendChild(el("div", "sub", [p.team, p.role].filter(Boolean).join(" | ")));
+      return card;
+    }
+
+    async function openPack(c, btn) {
+      btn.disabled = true;
+      errorBox.classList.add("hidden");
+      const { data, error } = await db.rpc("open_collection", { p_name: c.name });
+      if (error) {
+        showError(error.message);
+        btn.disabled = false;
+        return;
+      }
+      document.getElementById("results-title").textContent = "You opened " + c.name;
+      const box = document.getElementById("cards");
+      box.replaceChildren(...data.map(playerCard));
+      document.getElementById("results").classList.remove("hidden");
+      await load();
+    }
+
+    async function load() {
+      const [colRes, rarRes, profRes] = await Promise.all([
+        db.from("collections").select("*").eq("active", true).order("sort_order"),
+        db.from("event_rarities").select("event, colour"),
+        db.from("profiles").select("credits").eq("id", userId).single()
+      ]);
+
+      if (colRes.error) { showError("Could not load collections: " + colRes.error.message); return; }
+
+      rarities = {};
+      (rarRes.data || []).forEach(r => { rarities[r.event] = r; });
+
+      credits = profRes.data ? profRes.data.credits : 0;
+      document.getElementById("credits").textContent = credits;
+
+      const now = new Date();
+      const open = colRes.data.filter(c =>
+        (!c.starts_at || new Date(c.starts_at) <= now) &&
+        (!c.ends_at || new Date(c.ends_at) > now)
+      );
+
+      const box = document.getElementById("packs");
+      box.replaceChildren();
+      if (open.length === 0) {
+        box.appendChild(el("p", "empty", "No collections are open right now."));
+      } else {
+        open.forEach(c => box.appendChild(packCard(c)));
+      }
+    }
+
+    db.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        document.getElementById("login-note").classList.remove("hidden");
+        return;
+      }
+      userId = data.session.user.id;
+      document.getElementById("content").classList.remove("hidden");
+      load();
+    });
+  </script>
+</body>
+</html>

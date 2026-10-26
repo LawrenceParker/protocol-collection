@@ -1,0 +1,62 @@
+/* Loaded after style.css, only used by collections.html */
+body { align-items: flex-start; }
+
+.wrap { width: 100%; max-width: 900px; margin: 0 auto; }
+
+header.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+header.top h1 { margin: 0; }
+header.top a { color: var(--muted); text-decoration: none; }
+header.top a:hover { color: var(--text); }
+.balance { color: var(--muted); }
+.balance strong { color: var(--text); }
+
+h2 { font-size: 1.1rem; margin: 32px 0 12px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+.pack {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pack h3 { margin: 0; font-size: 1.05rem; }
+.pack .desc { color: var(--muted); font-size: 0.9rem; margin: 0; }
+.pack .detail { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.pack .limited { color: var(--accent); font-size: 0.85rem; margin: 0; }
+.pack button { margin-top: 10px; align-self: flex-start; }
+.pack button:disabled { opacity: 0.5; cursor: default; }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.player-card {
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.player-card .rarity { color: var(--muted); font-size: 0.8rem; }
+.player-card .name { font-size: 1.15rem; font-weight: 700; margin: 4px 0; }
+.player-card .sub { color: var(--muted); font-size: 0.85rem; }
+
+.empty { color: var(--muted); }
