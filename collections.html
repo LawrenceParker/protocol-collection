@@ -82,7 +82,7 @@
     }
 
     function playerCard(p) {
-      const r = rarities[p.event] || {};
+      const r = rarities[p.event_type] || {};
       const card = el("div", "player-card");
       if (r.colour) card.style.borderColor = r.colour;
       card.appendChild(el("div", "rarity", p.event + " " + p.year));
@@ -110,13 +110,13 @@
     async function load() {
       const [colRes, rarRes] = await Promise.all([
         db.from("collections").select("*").eq("active", true).order("sort_order"),
-        db.from("event_rarities").select("event, colour")
+        db.from("event_rarities").select("event_type, colour")
       ]);
 
       if (colRes.error) { showError("Could not load collections: " + colRes.error.message); return; }
 
       rarities = {};
-      (rarRes.data || []).forEach(r => { rarities[r.event] = r; });
+      (rarRes.data || []).forEach(r => { rarities[r.event_type] = r; });
 
       const now = new Date();
       const open = colRes.data.filter(c =>
