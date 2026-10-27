@@ -6,6 +6,7 @@
   <title>My Cards - Protocol Collection</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="cards.css">
   <link rel="stylesheet" href="mycards.css">
 </head>
 <body>
@@ -36,6 +37,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
   <script src="nav.js"></script>
+  <script src="cards.js"></script>
   <script>
     const errorBox = document.getElementById("error");
     let rarities = {};
@@ -51,18 +53,6 @@
       if (className) e.className = className;
       if (text !== undefined) e.textContent = text;
       return e;
-    }
-
-    function playerCard(row) {
-      const c = row.cards;
-      const r = rarities[c.event_type] || {};
-      const card = el("div", "player-card");
-      if (r.colour) card.style.borderColor = r.colour;
-      card.appendChild(el("div", "rarity", c.event + " " + c.year));
-      card.appendChild(el("div", "name", c.player));
-      card.appendChild(el("div", "sub", [c.team, c.role].filter(Boolean).join(" | ")));
-      if (row.collection) card.appendChild(el("div", "from", "From " + row.collection));
-      return card;
     }
 
     function weight(row) {
@@ -100,7 +90,7 @@
       } else if (rows.length === 0) {
         box.appendChild(el("p", "empty", "No cards match your filters."));
       } else {
-        rows.forEach(row => box.appendChild(playerCard(row)));
+        rows.forEach(row => box.appendChild(renderCard(row.cards, rarities[row.cards.event_type], row.collection)));
       }
     }
 
@@ -125,7 +115,7 @@
           .select("id, collection, opened_at, cards(event, event_type, year, player, team, role)")
           .order("id", { ascending: false })
           .limit(1000),
-        db.from("event_rarities").select("event_type, colour, drop_weight")
+        db.from("event_rarities").select("event_type, colour, colour2, drop_weight")
       ]);
 
       if (cardsRes.error) { showError("Could not load your cards: " + cardsRes.error.message); return; }

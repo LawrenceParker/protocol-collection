@@ -6,6 +6,7 @@
   <title>Collections - Protocol Collection</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="nav.css">
+  <link rel="stylesheet" href="cards.css">
   <link rel="stylesheet" href="collections.css">
 </head>
 <body>
@@ -31,6 +32,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
   <script src="nav.js"></script>
+  <script src="cards.js"></script>
   <script>
     const errorBox = document.getElementById("error");
     let rarities = {};
@@ -81,16 +83,6 @@
       return item;
     }
 
-    function playerCard(p) {
-      const r = rarities[p.event_type] || {};
-      const card = el("div", "player-card");
-      if (r.colour) card.style.borderColor = r.colour;
-      card.appendChild(el("div", "rarity", p.event + " " + p.year));
-      card.appendChild(el("div", "name", p.player));
-      card.appendChild(el("div", "sub", [p.team, p.role].filter(Boolean).join(" | ")));
-      return card;
-    }
-
     async function openPack(c, btn) {
       btn.disabled = true;
       errorBox.classList.add("hidden");
@@ -101,7 +93,7 @@
         return;
       }
       document.getElementById("results-title").textContent = "You opened " + c.name;
-      document.getElementById("cards").replaceChildren(...data.map(playerCard));
+      document.getElementById("cards").replaceChildren(...data.map(p => renderCard(p, rarities[p.event_type])));
       document.getElementById("results").classList.remove("hidden");
       await Nav.refreshCredits();   // updates the credits in the navbar
       await load();
@@ -110,7 +102,7 @@
     async function load() {
       const [colRes, rarRes] = await Promise.all([
         db.from("collections").select("*").eq("active", true).order("sort_order"),
-        db.from("event_rarities").select("event_type, colour")
+        db.from("event_rarities").select("event_type, colour, colour2")
       ]);
 
       if (colRes.error) { showError("Could not load collections: " + colRes.error.message); return; }

@@ -1,0 +1,67 @@
+/* Shared card design, used by collections.html and mycards.html.
+   Colours are set per card by cards.js from the event type. */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.player-card {
+  --card-top: #8b98a6;
+  --card-bottom: #4d5560;
+  --text-top: #ffffff;
+  --text-mid: #ffffff;
+  --text-bottom: #ffffff;
+
+  aspect-ratio: 5 / 7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 10px;
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    var(--card-top) 0%,
+    var(--card-top) 20%,
+    var(--card-bottom) 80%,
+    var(--card-bottom) 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  text-align: center;
+  overflow: hidden;
+}
+
+.pc-role,
+.pc-type {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  min-height: 1em;
+}
+.pc-role { color: var(--text-top); }
+.pc-type { color: var(--text-bottom); }
+
+.pc-centre {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  color: var(--text-mid);
+}
+.pc-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.pc-team {
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}

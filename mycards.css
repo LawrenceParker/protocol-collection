@@ -21,23 +21,3 @@
 .toolbar select:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
 .count { color: var(--muted); margin: 0 0 16px; font-size: 0.9rem; }
-
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-}
-.player-card {
-  background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: 10px;
-  padding: 14px;
-  min-height: 160px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-.player-card .rarity { color: var(--muted); font-size: 0.8rem; }
-.player-card .name { font-size: 1.15rem; font-weight: 700; margin: 4px 0; }
-.player-card .sub { color: var(--muted); font-size: 0.85rem; }
-.player-card .from { color: var(--muted); font-size: 0.75rem; margin-top: 6px; }
