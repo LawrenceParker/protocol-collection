@@ -5,8 +5,10 @@
 //     rarity: that card's event type row from event_rarities (colour, colour2)
 //     note:   optional extra text for the hover tooltip
 //
-// Colours come from event_rarities in Supabase (colour, and colour2 for two-tone cards).
-// To add a new card type, add a row there. No code change is needed.
+// The card shows the role (top), player and team (middle), and the full event
+// name plus year (bottom). The event TYPE is only used for the card colour,
+// which comes from event_rarities in Supabase (colour, and colour2 for two-tone
+// cards). To add a new card type, add a row there. No code change is needed.
 
 (function () {
   const FALLBACK = [139, 152, 166];   // grey, used if an event type has no colour
@@ -56,20 +58,21 @@
     const el = make("div", "player-card");
     el.style.setProperty("--card-top", toHex(top));
     el.style.setProperty("--card-bottom", toHex(bottom));
-    el.style.setProperty("--text-top", textOn(top));
     el.style.setProperty("--text-mid", textOn(middle));
-    el.style.setProperty("--text-bottom", textOn(bottom));
 
-    el.title = [card.event, card.year].filter(Boolean).join(" ") + (note ? " | From " + note : "");
+    el.title = (card.event_type || "") + (note ? " | From " + note : "");
 
-    el.appendChild(make("div", "pc-role", card.role || ""));
+    const face = make("div", "pc-face");
+    face.appendChild(make("div", "pc-role", card.role || ""));
 
     const centre = make("div", "pc-centre");
     centre.appendChild(make("div", "pc-name", card.player));
     if (card.team) centre.appendChild(make("div", "pc-team", card.team));
-    el.appendChild(centre);
+    face.appendChild(centre);
 
-    el.appendChild(make("div", "pc-type", card.event_type));
+    face.appendChild(make("div", "pc-event", [card.event, card.year].filter(Boolean).join(" ")));
+
+    el.appendChild(face);
     return el;
   };
 })();

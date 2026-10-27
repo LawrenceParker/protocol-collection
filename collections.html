@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="nav.css">
   <link rel="stylesheet" href="cards.css">
+  <link rel="stylesheet" href="reveal.css">
   <link rel="stylesheet" href="collections.css">
 </head>
 <body>
@@ -33,6 +34,7 @@
   <script src="config.js"></script>
   <script src="nav.js"></script>
   <script src="cards.js"></script>
+  <script src="reveal.js"></script>
   <script>
     const errorBox = document.getElementById("error");
     let rarities = {};
@@ -86,16 +88,26 @@
     async function openPack(c, btn) {
       btn.disabled = true;
       errorBox.classList.add("hidden");
-      const { data, error } = await db.rpc("open_collection", { p_name: c.name });
-      if (error) {
-        showError(error.message);
+
+      const reveal = Reveal.start(c);   // the pack animation begins straight away
+      const [res] = await Promise.all([
+        db.rpc("open_collection", { p_name: c.name }),
+        reveal.minTime                  // let the pack shake for a moment
+      ]);
+
+      if (res.error) {
+        reveal.cancel();
+        showError(res.error.message);
         btn.disabled = false;
         return;
       }
+
+      Nav.refreshCredits();             // updates the credits in the navbar
+      await reveal.show(res.data, rarities);   // waits until the player is done
+
       document.getElementById("results-title").textContent = "You opened " + c.name;
-      document.getElementById("cards").replaceChildren(...data.map(p => renderCard(p, rarities[p.event_type])));
+      document.getElementById("cards").replaceChildren(...res.data.map(p => renderCard(p, rarities[p.event_type])));
       document.getElementById("results").classList.remove("hidden");
-      await Nav.refreshCredits();   // updates the credits in the navbar
       await load();
     }
 
