@@ -1,12 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap");
 
-/* Shared card design, used by collections.html and mycards.html.
-   Colours are set per card by cards.js from the event type. */
+/* Shared ID badge design, used by collections.html and mycards.html.
+   Colours are set per card by cards.js from the event type.
+
+   Everything inside a badge is sized in "cqw" (1% of the badge's own width),
+   so the badge looks the same at any size. Layout is measured on a badge
+   that is 100 wide and 140 tall. */
 
 :root {
   --display: "Barlow Condensed", "Arial Narrow", sans-serif;
-  --ink: #0f1923;        /* dark navy used for labels */
-  --paper: #ece8e1;      /* off-white used for label text */
+  --ink: #0f1923;        /* dark navy */
+  --paper: #ece8e1;      /* off-white */
 }
 
 .cards {
@@ -15,125 +19,217 @@
   gap: 14px;
 }
 
-/* Outer shell: draws the thin border and the cut corners */
 .player-card {
-  --card-top: #8b98a6;
-  --card-bottom: #4d5560;
-  --text-mid: #ffffff;
-  --cut: 18px;
+  --b1: #8b98a6;          /* main colour (tab, frame, accents) */
+  --b2: #8b98a6;          /* second colour (footer strip); same as --b1 for single-colour types */
+  --t1: #10161c;          /* readable text colour on --b1 */
+  --t2: #10161c;          /* readable text colour on --b2 */
+  --name-size: 12cqw;
+  --event-size: 8cqw;
+  --role-size: 7cqw;
 
-  aspect-ratio: 5 / 7;
-  padding: 2px;
-  background: rgba(255, 255, 255, 0.4);
-  clip-path: polygon(
-    0 0,
-    calc(100% - var(--cut)) 0,
-    100% var(--cut),
-    100% 100%,
-    var(--cut) 100%,
-    0 calc(100% - var(--cut))
-  );
-  font-family: var(--display);
-}
-
-/* Inner face: colour gradient, hatching, and the layout */
-.pc-face {
   position: relative;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  container-type: inline-size;
+  aspect-ratio: 5 / 7;
   overflow: hidden;
-  text-align: center;
-  clip-path: polygon(
-    0 0,
-    calc(100% - (var(--cut) - 1.2px)) 0,
-    100% calc(var(--cut) - 1.2px),
-    100% 100%,
-    calc(var(--cut) - 1.2px) 100%,
-    0 calc(100% - (var(--cut) - 1.2px))
-  );
+  border-radius: 6px;
   background:
-    repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0 2px, transparent 2px 10px),
-    linear-gradient(180deg, var(--card-top) 0%, var(--card-top) 20%, var(--card-bottom) 85%, var(--card-bottom) 100%);
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 9px),
+    linear-gradient(180deg, #252e40 0%, #171d2a 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.35);
+  font-family: var(--display);
+  color: var(--paper);
 }
 
-/* Large faint angular "V" shape behind the name */
-.pc-face::before {
+/* Event name and year, running up the left edge */
+.bd-art {
+  position: absolute;
+  left: 2cqw;
+  top: 6cqw;
+  width: 11cqw;
+  height: 122cqw;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-overflow: ellipsis;
+  font-size: var(--event-size);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--b1);
+  opacity: 0.92;
+}
+
+/* Faint radar rings, bottom right */
+.bd-radar {
+  position: absolute;
+  left: 64cqw;
+  top: 72cqw;
+  width: 40cqw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    circle at center,
+    transparent 0 3cqw,
+    color-mix(in srgb, var(--b1) 40%, transparent) 3cqw 3.6cqw
+  );
+}
+
+/* Name tab, top right, name reading downwards */
+.bd-tab {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 31cqw;
+  height: 68cqw;
+  background: linear-gradient(180deg, var(--b1) 0%, var(--b1) 68%, var(--b2) 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 86%);
+}
+.bd-name {
+  position: absolute;
+  right: 0;
+  top: 4cqw;
+  width: 29cqw;
+  height: 58cqw;
+  display: flex;
+  align-items: center;
+  writing-mode: vertical-rl;
+  font-size: var(--name-size);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--t1);
+}
+
+/* Photo frame (placeholder silhouette until there are real photos) */
+.bd-photo {
+  position: absolute;
+  left: 14cqw;
+  top: 8cqw;
+  width: 57cqw;
+  height: 56cqw;
+  border: 1cqw solid var(--b1);
+  background: linear-gradient(165deg, #f6f1e7 0%, color-mix(in srgb, var(--b1) 28%, #e6dfd0) 100%);
+  box-shadow: 0 1cqw 2.5cqw rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+.bd-photo::before {
   content: "";
   position: absolute;
   left: 50%;
-  top: 22%;
-  width: 118%;
-  height: 52%;
+  top: 20%;
+  width: 36%;
+  aspect-ratio: 1;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.14);
-  clip-path: polygon(0 0, 28% 0, 50% 64%, 72% 0, 100% 0, 58% 100%, 42% 100%);
-  pointer-events: none;
+  border-radius: 50%;
+  background: rgba(23, 29, 42, 0.28);
+}
+.bd-photo::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -2%;
+  width: 78%;
+  height: 38%;
+  transform: translateX(-50%);
+  border-radius: 50% 50% 0 0;
+  background: rgba(23, 29, 42, 0.28);
 }
 
-/* Role tag at the top */
-.pc-role {
-  position: relative;
-  margin-top: 12px;
-  min-height: 1.5rem;
-  padding: 3px 18px;
-  background: var(--ink);
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  line-height: 1.3;
-  text-transform: uppercase;
-  clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
-}
-.pc-role:empty { visibility: hidden; }
-
-/* Name and team in the middle */
-.pc-centre {
-  position: relative;
-  flex: 1;
+/* Role, under the photo */
+.bd-role {
+  position: absolute;
+  left: 14cqw;
+  top: 66.5cqw;
+  width: 56cqw;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 100%;
-  padding: 0 8px;
-  color: var(--text-mid);
+  gap: 1.6cqw;
+  font-size: var(--role-size);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--paper);
 }
-.pc-name {
-  font-size: 1.7rem;
+.bd-role::before {
+  content: "";
+  flex: none;
+  width: 3cqw;
+  height: 3cqw;
+  background: var(--b1);
+}
+.bd-role:empty { visibility: hidden; }
+
+/* Team, under the role */
+.bd-team {
+  position: absolute;
+  left: 14cqw;
+  top: 80cqw;
+  width: 58cqw;
+  font-size: 9.5cqw;
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.02;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   overflow-wrap: anywhere;
-}
-.pc-team {
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  opacity: 0.9;
-  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #fff;
 }
 
-/* Event name and year along the bottom */
-.pc-event {
-  position: relative;
-  width: 100%;
-  min-height: 2.9rem;
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 25, 35, 0.9);
-  border-top: 2px solid rgba(255, 255, 255, 0.35);
-  color: var(--paper);
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  line-height: 1.15;
-  text-transform: uppercase;
+/* Small logo box, in the middle of the radar rings */
+.bd-logo {
+  position: absolute;
+  right: 8.5cqw;
+  top: 84.5cqw;
+  width: 15cqw;
+  height: 15cqw;
+  border: 0.9cqw solid var(--b1);
+  border-radius: 1.2cqw;
 }
+.bd-logo::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--b1);
+  clip-path: polygon(0 0, 28% 0, 50% 64%, 72% 0, 100% 0, 58% 100%, 42% 100%);
+}
+.bd-logo::before { width: 62%; height: 52%; }
+
+/* Footer strip with tick marks */
+.bd-foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 9cqw;
+  background:
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--t2) 30%, transparent) 0 0.7cqw, transparent 0.7cqw 3.2cqw),
+    var(--b2);
+  border-top: 1cqw solid var(--b1);
+}
+
+.bd-foot::before,
+.bd-foot::after {
+  content: "";
+  position: absolute;
+  left: 14cqw;
+  right: 6cqw;
+  height: 0.8cqw;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0 0.8cqw, transparent 0.8cqw 2.4cqw);
+}
+.bd-foot::before { top: -11cqw; }
+.bd-foot::after { top: -7cqw; right: 30cqw; }

@@ -1,18 +1,19 @@
-// Shared card design, used by the Collections and My Cards pages.
+// Shared ID badge design, used by the Collections and My Cards pages.
 //
 //   renderCard(card, rarity, note)
 //     card:   a row from the cards table (player, team, role, event, event_type, year)
 //     rarity: that card's event type row from event_rarities (colour, colour2)
 //     note:   optional extra text for the hover tooltip
 //
-// The card shows the role (top), player and team (middle), and the full event
-// name plus year (bottom). The event TYPE is only used for the card colour,
-// which comes from event_rarities in Supabase (colour, and colour2 for two-tone
-// cards). To add a new card type, add a row there. No code change is needed.
+// The badge shows the player name (tab, top right), role and team (under the photo)
+// and the full event name plus year (up the left edge). The event TYPE is only used
+// for the badge colour, which comes from event_rarities in Supabase:
+//   colour  = tab, photo frame and accents
+//   colour2 = footer strip (optional, blank means the same as colour)
+// To add a new card type, add a row there. No code change is needed.
 
 (function () {
   const FALLBACK = [139, 152, 166];   // grey, used if an event type has no colour
-  const DARKEN = 0.55;                // single-colour cards fade to this much of their colour
 
   function parseHex(hex) {
     if (typeof hex !== "string") return null;
@@ -49,30 +50,42 @@
     return e;
   }
 
+  // Long names get a smaller font so they still fit. Sizes are in cqw
+  // (1% of the badge width), so they scale with the badge.
+  function fit(text, max, min, budget) {
+    const len = Math.max(String(text || "").length, 1);
+    return Math.max(min, Math.min(max, budget / len)) + "cqw";
+  }
+
   window.renderCard = function (card, rarity, note) {
     rarity = rarity || {};
-    const top = parseHex(rarity.colour) || FALLBACK;
-    const bottom = parseHex(rarity.colour2) || top.map(v => v * DARKEN);
-    const middle = top.map((v, i) => (v + bottom[i]) / 2);
+    const c1 = parseHex(rarity.colour) || FALLBACK;
+    const c2 = parseHex(rarity.colour2) || c1;
+    const eventText = [card.event, card.year].filter(Boolean).join(" ");
 
     const el = make("div", "player-card");
-    el.style.setProperty("--card-top", toHex(top));
-    el.style.setProperty("--card-bottom", toHex(bottom));
-    el.style.setProperty("--text-mid", textOn(middle));
+    el.style.setProperty("--b1", toHex(c1));
+    el.style.setProperty("--b2", toHex(c2));
+    el.style.setProperty("--t1", textOn(c1));
+    el.style.setProperty("--t2", textOn(c2));
+    el.style.setProperty("--name-size", fit(card.player, 13, 7, 78));
+    el.style.setProperty("--event-size", fit(eventText, 8.5, 5, 160));
+    el.style.setProperty("--role-size", fit(card.role, 7, 5.2, 62));
 
-    el.title = (card.event_type || "") + (note ? " | From " + note : "");
+    el.title = [card.player, eventText, card.event_type].filter(Boolean).join(" | ") + (note ? " | From " + note : "");
 
-    const face = make("div", "pc-face");
-    face.appendChild(make("div", "pc-role", card.role || ""));
+    el.appendChild(make("div", "bd-art", eventText));
+    el.appendChild(make("div", "bd-radar"));
 
-    const centre = make("div", "pc-centre");
-    centre.appendChild(make("div", "pc-name", card.player));
-    if (card.team) centre.appendChild(make("div", "pc-team", card.team));
-    face.appendChild(centre);
+    const tab = make("div", "bd-tab");
+    tab.appendChild(make("div", "bd-name", card.player));
+    el.appendChild(tab);
 
-    face.appendChild(make("div", "pc-event", [card.event, card.year].filter(Boolean).join(" ")));
-
-    el.appendChild(face);
+    el.appendChild(make("div", "bd-photo"));
+    el.appendChild(make("div", "bd-role", card.role || ""));
+    el.appendChild(make("div", "bd-team", card.team || ""));
+    el.appendChild(make("div", "bd-logo"));
+    el.appendChild(make("div", "bd-foot"));
     return el;
   };
 })();
